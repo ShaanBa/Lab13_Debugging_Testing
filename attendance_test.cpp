@@ -2,11 +2,45 @@
  * Lab 13 — Debugging & Testing
  * attendance_test.cpp
  *
- * Purpose: Demonstrate the fault/error/failure distinction for a simple
- * attendance checker.
- *
  * Author: Shaan Bawa
  * Creation date: 2025-11-25
+ *
+ * -----------------------------------------------------------------------
+ * WRITTEN ANSWERS (PROLOGUE):
+ * -----------------------------------------------------------------------
+ *
+ * 1. Is there a fault in the program? If so, locate it and explain.
+ * YES. The fault is in the loop initialization: `for (int i = 1; ...`.
+ * The loop starts at index 1 instead of index 0. This causes the program
+ * to ignore the attendance status of the very first lecture.
+ *
+ * 2. Define a test case that does not execute the fault.
+ * IMPOSSIBLE. The fault is located in the unconditional loop header
+ * (`int i = 1`). Whenever the function is called, this line causes the
+ * fault to be executed immediately. We cannot run the function without
+ * triggering this initialization.
+ *
+ * 3. Define a test case that executes the fault but does not result in an error state.
+ * Input: {1, 0, 0, 0, 1, 1, 1, 1, 1, 1}
+ * Explanation: The student was PRESENT (1) at index 0. The faulty code skips
+ * index 0. Since the student was present, skipping it does not increase the
+ * 'absent' count. The internal variable `absentCount` remains correct (0)
+ * at that step.
+ *
+ * 4. Define a test case that results in an error state but not a failure.
+ * Input: {0, 0, 0, 0, 1, 1, 1, 1, 1, 1}
+ * Explanation: The student was ABSENT (0) at index 0. The faulty code skips
+ * it, so the internal `absentCount` is 3. The correct count is 4. This is an
+ * ERROR STATE (internal variables differ). However, since both 3 and 4 are
+ * >= 3, both functions return TRUE (Fail). Thus, no external failure occurs.
+ *
+ * 5. Define a test case that results in failure.
+ * Input: {0, 0, 0, 1, 1, 1, 1, 1, 1, 1}
+ * Explanation: The student was ABSENT (0) at index 0.
+ * Correct count = 3 (Result: Fail).
+ * Faulty count = 2 (Result: Pass).
+ * The faulty function returns FALSE when it should return TRUE.
+ * -----------------------------------------------------------------------
  */
 
 #include <iostream>
@@ -18,7 +52,7 @@ using std::endl;
 using std::vector;
 
 // ---------------------------------------------------------
-// 1. The Faulty Implementation (from Lab PDF)
+// 1. The Faulty Implementation (Required by Lab)
 // ---------------------------------------------------------
 bool failLecture_faulty(const vector<int>& attendanceRecords) {
     int absentCount = 0;
@@ -30,7 +64,7 @@ bool failLecture_faulty(const vector<int>& attendanceRecords) {
 }
 
 // ---------------------------------------------------------
-// 2. The Correct Implementation
+// 2. The Correct Implementation (Required by Lab)
 // ---------------------------------------------------------
 bool failLecture_correct(const vector<int>& attendanceRecords) {
     int absentCount = 0;
@@ -62,28 +96,9 @@ std::string printVec(const vector<int>& v) {
 int main() {
     cout << "Lab 13 — Debugging and Testing\n";
     cout << "Author: Shaan Bawa\n";
+    cout << "Note: Written answers are located in the prologue comments.\n";
     cout << "--------------------------------------------------\n\n";
 
-    // ---------------------------------------------------------
-    // Q1: Fault Identification
-    // ---------------------------------------------------------
-    cout << "Q1) Is there a fault? Locate and explain.\n";
-    cout << "Answer: YES. The fault is in the loop initialization: 'int i = 1'.\n";
-    cout << "The loop skips the first attendance record (index 0), causing an\n";
-    cout << "off-by-one error in counting absences if the student was absent at lecture 0.\n\n";
-
-    // ---------------------------------------------------------
-    // Q2: Test case that does NOT execute the fault
-    // ---------------------------------------------------------
-    cout << "Q2) Test case that does NOT execute the fault.\n";
-    cout << "Answer: IMPOSSIBLE.\n";
-    cout << "Reason: The fault is located in the unconditional loop header.\n";
-    cout << "Whenever the function is called, the line 'int i = 1' is executed.\n";
-    cout << "Therefore, we cannot run the function without executing the fault.\n\n";
-
-    // ---------------------------------------------------------
-    // Test Setup for Q3, Q4, Q5
-    // ---------------------------------------------------------
     struct TestCase {
         std::string question;
         std::string description;
@@ -92,28 +107,23 @@ int main() {
 
     vector<TestCase> tests = {
         // Q3: Execute fault, but NO error state.
-        // Index 0 is '1' (Present). Skipping it doesn't change the count.
         {
             "Q3",
-            "Execute fault, NO Error State",
+            "Execute fault, NO Error State (Index 0 is Present/1)",
             {1, 0, 0, 0, 1, 1, 1, 1, 1, 1} 
         },
 
         // Q4: Error state, but NO failure.
-        // Index 0 is '0' (Absent). Internal count is wrong (off by 1), 
-        // but total absences are high enough (4) that both return True.
         {
             "Q4",
-            "Error State, NO Failure",
+            "Error State, NO Failure (Index 0 is Absent/0, total > 3)",
             {0, 0, 0, 0, 1, 1, 1, 1, 1, 1}
         },
 
         // Q5: Failure.
-        // Index 0 is '0' (Absent). Internal count is wrong (2 vs 3).
-        // Correct returns True (Fail), Faulty returns False (Pass).
         {
             "Q5",
-            "Failure (External behavior incorrect)",
+            "Failure (Index 0 is Absent/0, total hits threshold exactly)",
             {0, 0, 0, 1, 1, 1, 1, 1, 1, 1}
         }
     };
@@ -121,8 +131,14 @@ int main() {
     // ---------------------------------------------------------
     // Run Tests
     // ---------------------------------------------------------
+    
+    // Explicitly print Q2 answer to console as well
+    cout << "Test Q2: Case that does not execute fault.\n";
+    cout << "   Result: IMPOSSIBLE (Fault is in unconditional loop init).\n";
+    cout << "--------------------------------------------------\n";
+
     for (const auto& t : tests) {
-        cout << t.question << ") " << t.description << "\n";
+        cout << "Test " << t.question << ": " << t.description << "\n";
         cout << "   Input: " << printVec(t.input) << "\n";
 
         // Calculate data
