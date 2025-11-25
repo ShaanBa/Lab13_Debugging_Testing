@@ -30,3 +30,13 @@ bool failLecture_faulty(const vector<int>& attendanceRecords) {
     }
     return absentCount >= 3;
 }
+
+// Correct implementation: count from index 0
+bool failLecture_correct(const vector<int>& attendanceRecords) {
+    int absentCount = 0;
+    for (int i = 0; i < (int)attendanceRecords.size(); ++i) {
+        absentCount += attendanceRecords[i] == 0;
+    }
+    return absentCount >= 3;
+}
+
