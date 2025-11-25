@@ -40,3 +40,10 @@ bool failLecture_correct(const vector<int>& attendanceRecords) {
     return absentCount >= 3;
 }
 
+int count_absent(const vector<int>& v) {
+    int c = 0;
+    for (int x : v) c += (x == 0);
+    return c;
+}
+
+
