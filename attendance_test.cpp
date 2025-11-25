@@ -2,12 +2,8 @@
  * Lab 13 — Debugging & Testing
  * attendance_test.cpp
  *
- * Purpose: demonstrate the fault/error/failure distinction for a simple
- * attendance checker. Implements the faulty function (as given) and a
- * corrected version, then runs a set of test cases that show cases that
- * (a) do not expose the fault, (b) execute the fault but no error state,
- * (c) produce an internal error state but no failure, and (d) produce a
- * failure.
+ * Purpose: Demonstrate the fault/error/failure distinction for a simple
+ * attendance checker.
  *
  * Author: Shaan Bawa
  * Creation date: 2025-11-25
@@ -21,31 +17,38 @@ using std::cout;
 using std::endl;
 using std::vector;
 
-// Faulty implementation taken from the lab description.
+// ---------------------------------------------------------
+// 1. The Faulty Implementation (from Lab PDF)
+// ---------------------------------------------------------
 bool failLecture_faulty(const vector<int>& attendanceRecords) {
     int absentCount = 0;
-    // BUG: loop starts at 1, so attendanceRecords[0] is ignored
+    // FAULT: Loop starts at 1, ignoring index 0.
     for (int i = 1; i < (int)attendanceRecords.size(); ++i) {
         absentCount += attendanceRecords[i] == 0;
     }
     return absentCount >= 3;
 }
 
-// Correct implementation: count from index 0
+// ---------------------------------------------------------
+// 2. The Correct Implementation
+// ---------------------------------------------------------
 bool failLecture_correct(const vector<int>& attendanceRecords) {
     int absentCount = 0;
+    // CORRECT: Loop starts at 0.
     for (int i = 0; i < (int)attendanceRecords.size(); ++i) {
         absentCount += attendanceRecords[i] == 0;
     }
     return absentCount >= 3;
 }
 
+// Helper to count actual absences for verification
 int count_absent(const vector<int>& v) {
     int c = 0;
     for (int x : v) c += (x == 0);
     return c;
 }
 
+// Helper to print the vector
 std::string printVec(const vector<int>& v) {
     std::string s = "{";
     for (size_t i = 0; i < v.size(); ++i) {
@@ -57,69 +60,100 @@ std::string printVec(const vector<int>& v) {
 }
 
 int main() {
-    cout << "Lab 13 — Attendance fault demonstration\n\n";
+    cout << "Lab 13 — Debugging and Testing\n";
+    cout << "Author: Shaan Bawa\n";
+    cout << "--------------------------------------------------\n\n";
 
-    // Test case (Q2) — does NOT expose the fault (both functions agree).
-    // Attendance: absences at indices 1,2,3 (three absences but index 0 present)
-    vector<int> T_noExpose = {1,0,0,0,1,1,1,1,1,1};
+    // ---------------------------------------------------------
+    // Q1: Fault Identification
+    // ---------------------------------------------------------
+    cout << "Q1) Is there a fault? Locate and explain.\n";
+    cout << "Answer: YES. The fault is in the loop initialization: 'int i = 1'.\n";
+    cout << "The loop skips the first attendance record (index 0), causing an\n";
+    cout << "off-by-one error in counting absences if the student was absent at lecture 0.\n\n";
 
-    // Test case (Q3) — executes the faulty code but does not produce an error state
-    // (faulty code executed; both functions still return the same boolean).
-    vector<int> T_faultExec_noError = {1,0,0,0,1,1,1,1,1,1}; // same as above
+    // ---------------------------------------------------------
+    // Q2: Test case that does NOT execute the fault
+    // ---------------------------------------------------------
+    cout << "Q2) Test case that does NOT execute the fault.\n";
+    cout << "Answer: IMPOSSIBLE.\n";
+    cout << "Reason: The fault is located in the unconditional loop header.\n";
+    cout << "Whenever the function is called, the line 'int i = 1' is executed.\n";
+    cout << "Therefore, we cannot run the function without executing the fault.\n\n";
 
-    // Test case (Q4) — internal error state but NOT a failure: correct counts 4,
-    // faulty counts 3 (ignores index 0), both still report "fail" (true).
-    vector<int> T_errorNoFailure = {0,0,0,0,1,1,1,1,1,1};
-
-    // Test case (Q5) — failure: correct says fail (3 absences) but faulty ignores
-    // the absence at index 0 and returns false.
-    vector<int> T_failure = {0,0,0,1,1,1,1,1,1,1};
-
-    struct Test { std::string name; vector<int> v; };
-    vector<Test> tests = {
-        {"DoesNOTExposeFault (Q2)", T_noExpose},
-        {"FaultExec_NoError (Q3)", T_faultExec_noError},
-        {"ErrorState_NoFailure (Q4)", T_errorNoFailure},
-        {"Failure (Q5)", T_failure}
+    // ---------------------------------------------------------
+    // Test Setup for Q3, Q4, Q5
+    // ---------------------------------------------------------
+    struct TestCase {
+        std::string question;
+        std::string description;
+        vector<int> input;
     };
 
-    for (const auto &t : tests) {
-        int correctCount = count_absent(t.v);
-        int faultyCount = 0; // compute faulty's internal count by calling the loop manually
-        for (int i = 1; i < (int)t.v.size(); ++i) faultyCount += (t.v[i] == 0);
+    vector<TestCase> tests = {
+        // Q3: Execute fault, but NO error state.
+        // Index 0 is '1' (Present). Skipping it doesn't change the count.
+        {
+            "Q3",
+            "Execute fault, NO Error State",
+            {1, 0, 0, 0, 1, 1, 1, 1, 1, 1} 
+        },
 
-        bool expect = correctCount >= 3;
-        bool actual = failLecture_faulty(t.v);
+        // Q4: Error state, but NO failure.
+        // Index 0 is '0' (Absent). Internal count is wrong (off by 1), 
+        // but total absences are high enough (4) that both return True.
+        {
+            "Q4",
+            "Error State, NO Failure",
+            {0, 0, 0, 0, 1, 1, 1, 1, 1, 1}
+        },
 
-        cout << "Test: " << t.name << "\n";
-        cout << "  Attendance: " << printVec(t.v) << " (len=" << t.v.size() << ")\n";
-        cout << "  Correct absent count = " << correctCount << ", Faulty internal count = " << faultyCount << "\n";
-        cout << "  Expected (correct) result: " << (expect ? "FAIL (true)" : "PASS (false)") << "\n";
-        cout << "  Faulty function result:  " << (actual ? "FAIL (true)" : "PASS (false)") << "\n";
-
-        if (expect == actual) {
-            if (correctCount != faultyCount) {
-                cout << "  => INTERNAL ERROR STATE (counts differ) but NO FAILURE (external behavior matches).\n";
-            } else {
-                cout << "  => No error observed; faulty implementation did not change outcome.\n";
-            }
-        } else {
-            cout << "  => FAILURE: external behavior deviates from correct behavior.\n";
+        // Q5: Failure.
+        // Index 0 is '0' (Absent). Internal count is wrong (2 vs 3).
+        // Correct returns True (Fail), Faulty returns False (Pass).
+        {
+            "Q5",
+            "Failure (External behavior incorrect)",
+            {0, 0, 0, 1, 1, 1, 1, 1, 1, 1}
         }
-        cout << "\n";
+    };
+
+    // ---------------------------------------------------------
+    // Run Tests
+    // ---------------------------------------------------------
+    for (const auto& t : tests) {
+        cout << t.question << ") " << t.description << "\n";
+        cout << "   Input: " << printVec(t.input) << "\n";
+
+        // Calculate data
+        int correctAbsences = count_absent(t.input);
+        
+        // Simulate faulty internal state manually for demonstration
+        int faultyInternalCount = 0;
+        for(size_t i=1; i<t.input.size(); ++i) faultyInternalCount += (t.input[i]==0);
+
+        bool expectedResult = failLecture_correct(t.input);
+        bool actualResult = failLecture_faulty(t.input);
+
+        cout << "   Correct Internal Count: " << correctAbsences << "\n";
+        cout << "   Faulty  Internal Count: " << faultyInternalCount << "\n";
+        
+        if (correctAbsences != faultyInternalCount) {
+             cout << "   [!] Error State Detected: Internal variables differ.\n";
+        } else {
+             cout << "   [OK] No Error State: Internal variables match.\n";
+        }
+
+        cout << "   Expected Output: " << (expectedResult ? "True (Fail Course)" : "False (Pass Course)") << "\n";
+        cout << "   Actual Output:   " << (actualResult ? "True (Fail Course)" : "False (Pass Course)") << "\n";
+
+        if (expectedResult != actualResult) {
+            cout << "   => FAILURE OBSERVED.\n";
+        } else {
+            cout << "   => NO FAILURE OBSERVED.\n";
+        }
+        cout << "--------------------------------------------------\n";
     }
-
-    // Also answer Q1 explicitly (print fault description)
-    cout << "Q1) Fault location and explanation:\n";
-    cout << "  Fault: the loop in the provided implementation starts at index 1 (for i=1)",
-         " so the attendance at index 0 is ignored. For 10 lectures (indices 0..9) this causes",
-         " an off-by-one counting error whenever the student is absent at lecture 0.\n\n";
-
-    cout << "Summary (mapping to lab terms):\n";
-    cout << "  - Fault: the off-by-one bug in the loop (code defect).\n";
-    cout << "  - Error state: the internal absent count differs from the correct count (e.g., 3 vs 4).\n";
-    cout << "  - Failure: the returned boolean differs from the correct result (example run above: 'Failure (Q5)').\n";
 
     return 0;
 }
-
